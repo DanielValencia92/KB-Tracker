@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "KB Tracker",
+  "version": "0.1.0",
+  "description": "Tracks private lobby & limited format game data for Karabast (Star Wars Unlimited).",
+  "permissions": [
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://play.karabast.net/*",
+    "https://*.karabast.net/*"
+  ],
+  "background": {
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://play.karabast.net/*",
+        "https://*.karabast.net/*"
+      ],
+      "js": ["src/inject/interceptor.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://play.karabast.net/*",
+        "https://*.karabast.net/*"
+      ],
+      "js": ["src/content/content.ts"],
+      "run_at": "document_start",
+      "world": "ISOLATED",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [],
+      "matches": [
+        "https://play.karabast.net/*",
+        "https://*.karabast.net/*"
+      ]
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "KB Tracker",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  }
+}

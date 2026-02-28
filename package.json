@@ -1,0 +1,22 @@
+{
+  "name": "kb-tracker",
+  "version": "0.1.0",
+  "description": "Karabast private lobby stats tracker – browser extension",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "vite build",
+    "build:prod": "vite build --mode production",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.26",
+    "@types/chrome": "^0.0.295",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11"
+  },
+  "dependencies": {
+    "idb": "^8.0.0"
+  }
+}

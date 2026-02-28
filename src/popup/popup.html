@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KB Tracker</title>
+    <style>
+      :root {
+        --bg: #0d0f14;
+        --surface: #151820;
+        --border: #2a2d38;
+        --accent: #ffe81f; /* Star Wars yellow */
+        --text: #e8eaf0;
+        --muted: #7a7e90;
+        --win: #4caf68;
+        --loss: #e05252;
+        --draw: #7a7e90;
+        --limited-badge: #9b59b6;
+        --font: 'Segoe UI', system-ui, sans-serif;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--text);
+        width: 380px;
+        min-height: 200px;
+        max-height: 580px;
+        overflow-y: auto;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px 8px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+
+      header h1 {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--accent);
+        text-transform: uppercase;
+      }
+
+      header a {
+        font-size: 11px;
+        color: var(--muted);
+        text-decoration: none;
+      }
+      header a:hover { color: var(--accent); }
+
+      #status {
+        padding: 8px 14px;
+        font-size: 11px;
+        color: var(--muted);
+        border-bottom: 1px solid var(--border);
+      }
+
+      #game-list {
+        list-style: none;
+      }
+
+      .game-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 4px;
+        padding: 9px 14px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+      .game-row:hover { background: var(--surface); }
+
+      .game-row .main {
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .game-row .sub {
+        font-size: 10px;
+        color: var(--muted);
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .badge {
+        display: inline-block;
+        border-radius: 3px;
+        padding: 1px 5px;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        align-self: start;
+      }
+      .badge.win  { background: var(--win);  color: #001a00; }
+      .badge.loss { background: var(--loss); color: #fff; }
+      .badge.draw { background: var(--draw); color: #fff; }
+      .badge.limited { background: var(--limited-badge); color: #fff; margin-left: 4px; }
+      .badge.eternal { background: #1a7fa0; color: #fff; margin-left: 4px; }
+
+      .empty {
+        padding: 24px 14px;
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      footer {
+        padding: 8px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        border-top: 1px solid var(--border);
+      }
+      .footer-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      footer button {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      footer button:hover { border-color: var(--accent); color: var(--accent); }
+
+      #tracking-btn {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 3px;
+        border: 1px solid;
+        cursor: pointer;
+        background: none;
+        transition: background 0.15s, color 0.15s;
+      }
+      #tracking-btn.enabled {
+        border-color: var(--win);
+        color: var(--win);
+      }
+      #tracking-btn.disabled {
+        border-color: var(--loss);
+        color: var(--loss);
+      }
+      #tracking-btn.enabled:hover { background: var(--win); color: #001a00; }
+      #tracking-btn.disabled:hover { background: var(--loss); color: #fff; }
+
+      #format-mode-btn {
+        width: 100%;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 3px;
+        border: 1px solid;
+        cursor: pointer;
+        background: none;
+        transition: background 0.15s, color 0.15s;
+        letter-spacing: 0.05em;
+      }
+      #format-mode-btn.premier {
+        border-color: var(--muted);
+        color: var(--muted);
+      }
+      #format-mode-btn.limited {
+        border-color: var(--limited-badge);
+        color: var(--limited-badge);
+      }
+      #format-mode-btn.eternal {
+        border-color: #1a7fa0;
+        color: #1a7fa0;
+      }
+      #format-mode-btn.premier:hover { background: var(--muted); color: var(--bg); }
+      #format-mode-btn.limited:hover { background: var(--limited-badge); color: #fff; }
+      #format-mode-btn.eternal:hover { background: #1a7fa0; color: #fff; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>⚡ KB Tracker</h1>
+      <a id="dashboard-link" href="#" target="_blank">Open Dashboard →</a>
+    </header>
+    <div id="status">Loading…</div>
+    <ul id="game-list"></ul>
+    <div id="empty" class="empty" style="display:none">
+      No games tracked yet.<br />Play a game on Karabast to start.
+    </div>
+    <footer>
+      <div class="footer-row">
+        <button id="tracking-btn" class="enabled">&#9210; Tracking ON</button>
+        <button id="export-btn">Export DB</button>
+      </div>
+      <button id="format-mode-btn" class="premier">&#9654; FORMAT MODE: PREMIER</button>
+    </footer>
+    <script type="module" src="./popup.ts"></script>
+  </body>
+</html>
