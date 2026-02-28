@@ -9,9 +9,10 @@
  *  2. Listen for KB_TRACKER_WS_MSG postMessages from the interceptor.
  *  3. Parse them with socketParser, feed to a GameRecorder instance.
  *  4. When a game completes, send the GameRecord to the background SW for
- *     persistence via chrome.runtime.sendMessage.
+ *     persistence via browser.runtime.sendMessage.
  */
 
+import browser from 'webextension-polyfill';
 import { parseFrame, extractGameState } from '../shared/socketParser';
 import { GameRecorder } from '../shared/gameRecorder';
 import type { ExtMessage, GameRecord } from '../shared/types';
@@ -25,14 +26,14 @@ import type { ExtMessage, GameRecord } from '../shared/types';
 let trackingEnabled = true;
 let forceFormat: 'premier' | 'limited' | 'eternal' = 'premier';
 
-chrome.storage.local.get(['trackingEnabled', 'formatMode'], (res) => {
+browser.storage.local.get(['trackingEnabled', 'formatMode']).then((res) => {
   trackingEnabled = res['trackingEnabled'] !== false;
   forceFormat = (res['formatMode'] as 'premier' | 'limited' | 'eternal') || 'premier';
   console.debug('[KB Tracker] tracking enabled on load:', trackingEnabled);
   console.debug('[KB Tracker] format mode on load:', forceFormat);
 });
 
-chrome.storage.onChanged.addListener((changes, area) => {
+browser.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if ('trackingEnabled' in changes) {
     trackingEnabled = changes['trackingEnabled'].newValue !== false;
@@ -50,7 +51,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 // (Bo3), so we keep one per gameId.
 const recorders = new Map<string, GameRecorder>();
 
-function handleGameComplete(record: GameRecord): void {
+async function handleGameComplete(record: GameRecord): Promise<void> {
   if (!trackingEnabled) {
     console.log('[KB Tracker] Tracking disabled — discarding completed game:', record.gameId);
     return;
@@ -70,13 +71,8 @@ function handleGameComplete(record: GameRecord): void {
   };
 
   try {
-    chrome.runtime.sendMessage(msg, (response) => {
-      if (chrome.runtime.lastError) {
-        console.warn('[KB Tracker] Failed to send record to SW:', chrome.runtime.lastError);
-      } else {
-        console.debug('[KB Tracker] Record acknowledged:', response);
-      }
-    });
+    const response = await browser.runtime.sendMessage(msg);
+    console.debug('[KB Tracker] Record acknowledged:', response);
   } catch (err) {
     // Extension was reloaded/updated while the content script was still live.
     // The game record is lost for this session but we should not throw.

@@ -661,8 +661,11 @@ document.addEventListener('click', (e) => {
     _ghMenu.style.left = r.left + 'px';
     requestAnimationFrame(() => {
       const w = _ghMenu.offsetWidth;
+      const h = _ghMenu.offsetHeight;
       if (r.left + w > window.innerWidth - 8)
         _ghMenu.style.left = (r.right - w) + 'px';
+      if (r.bottom + 4 + h > window.innerHeight - 8)
+        _ghMenu.style.top = (r.top - h - 4) + 'px';
     });
     return;
   }
@@ -1285,7 +1288,7 @@ function renderToolsView(): void {
           <td style="padding:7px 10px">
             <div style="display:flex;align-items:center;gap:8px">
               ${l.leaderSetId ? `<img src="${cardImageUrl(l.leaderSetId.set, l.leaderSetId.number)}" style="height:28px;border-radius:3px" loading="lazy">` : ''}
-              <span style="font-size:12px">${l.leaderName}</span>
+              <span style="font-size:12px">${escHtml(l.leaderName)}</span>
             </div>
           </td>
           <td style="padding:7px 10px;text-align:right;font-size:12px">${l.total}</td>

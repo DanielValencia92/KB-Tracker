@@ -1,22 +1,29 @@
 {
   "name": "kb-tracker",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Karabast private lobby stats tracker – browser extension",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite build --watch --mode development",
-    "build": "vite build",
-    "build:prod": "vite build --mode production",
+    "dev:chrome": "cross-env TARGET=chrome vite build --watch --mode development",
+    "dev:firefox": "cross-env TARGET=firefox vite build --watch --mode development",
+    "build:chrome": "cross-env TARGET=chrome vite build",
+    "build:firefox": "cross-env TARGET=firefox vite build",
+    "build:prod": "cross-env TARGET=chrome vite build --mode production",
+    "package:firefox": "npm run build:firefox && web-ext build --source-dir dist-firefox --artifacts-dir web-ext-artifacts --ignore-files **/*.map --overwrite-dest",
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "@crxjs/vite-plugin": "^2.0.0-beta.26",
-    "@types/chrome": "^0.0.295",
+    "@types/webextension-polyfill": "^0.10.7",
+    "cross-env": "^7.0.3",
     "typescript": "^5.4.5",
-    "vite": "^5.2.11"
+    "vite": "^5.2.11",
+    "vite-plugin-static-copy": "^3.2.0",
+    "vite-plugin-web-extension": "^4.2.0",
+    "web-ext": "^8.4.0"
   },
   "dependencies": {
-    "idb": "^8.0.0"
+    "idb": "^8.0.0",
+    "webextension-polyfill": "^0.12.0"
   }
 }
