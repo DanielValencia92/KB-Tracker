@@ -1,11 +1,10 @@
 {
   "manifest_version": 3,
   "name": "KB Tracker",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Tracks private lobby & limited format game data for Karabast (Star Wars Unlimited).",
   "permissions": [
-    "storage",
-    "alarms"
+    "storage"
   ],
   "host_permissions": [
     "https://play.karabast.net/*",
@@ -59,5 +58,15 @@
     "16": "assets/icon16.png",
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "kb-tracker@karabast.extension",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": {
+        "required": ["none"],
+        "optional": []
+      }
+    }
   }
 }

@@ -1,3 +1,5 @@
+import browser from 'webextension-polyfill';
+
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
 export interface KBSettings {
@@ -27,19 +29,11 @@ export const DEFAULT_SETTINGS: KBSettings = {
 const STORAGE_KEY = 'kb_settings';
 
 export async function loadSettings(): Promise<KBSettings> {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(STORAGE_KEY, (res) => {
-      const stored = (res[STORAGE_KEY] ?? {}) as Partial<KBSettings>;
-      resolve({ ...DEFAULT_SETTINGS, ...stored });
-    });
-  });
+  const res = await browser.storage.sync.get(STORAGE_KEY);
+  const stored = (res[STORAGE_KEY] ?? {}) as Partial<KBSettings>;
+  return { ...DEFAULT_SETTINGS, ...stored };
 }
 
 export async function saveSettings(settings: KBSettings): Promise<void> {
-  return new Promise((resolve, reject) => {
-    chrome.storage.sync.set({ [STORAGE_KEY]: settings }, () => {
-      if (chrome.runtime.lastError) reject(chrome.runtime.lastError);
-      else resolve();
-    });
-  });
+  await browser.storage.sync.set({ [STORAGE_KEY]: settings });
 }

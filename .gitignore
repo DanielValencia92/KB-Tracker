@@ -1,6 +1,11 @@
-node_modules/
-dist/
-.vite/
-*.map
-.env
+node_modules/ 
+dist/ 
+dist-chrome/ 
+dist-firefox/ 
+web-ext-artifacts/ 
+.vite/ 
+*.map 
+.env 
 .env.local
+*.xpi
+*.zip

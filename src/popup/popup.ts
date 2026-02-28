@@ -1,4 +1,9 @@
+import browser from 'webextension-polyfill';
 import type { ExtMessage, StoredGame } from '../shared/types';
+
+function escHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 // We need StoredGame from db but it's not exported from types —
 // the popup uses the 'games' shape which omits cardEvents & rawLog.
@@ -13,15 +18,7 @@ type GameSummary = Omit<import('../shared/types').GameRecord, 'cardEvents' | 'ra
 function sendMessage<T extends ExtMessage>(
   msg: Extract<ExtMessage, { type: T['type'] }>
 ): Promise<ExtMessage> {
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(msg, (response) => {
-      if (chrome.runtime.lastError) {
-        reject(chrome.runtime.lastError);
-      } else {
-        resolve(response as ExtMessage);
-      }
-    });
-  });
+  return browser.runtime.sendMessage(msg) as Promise<ExtMessage>;
 }
 
 function resultClass(game: GameSummary, perspective?: string): 'win' | 'loss' | 'draw' {
@@ -68,15 +65,15 @@ function renderGameList(games: GameSummary[]): void {
 
     li.innerHTML = `
       <div>
-        <div class="main">${p0.leaderName ?? p0.leaderId} vs ${p1.leaderName ?? p1.leaderId}</div>
+        <div class="main">${escHtml(p0.leaderName ?? p0.leaderId)} vs ${escHtml(p1.leaderName ?? p1.leaderId)}</div>
         <div class="sub">${formatDate(game.completedAt)} · Round ${game.rounds} · ${game.format}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">${badgeHTML}</div>
     `;
 
     li.addEventListener('click', () => {
-      const url = chrome.runtime.getURL(`src/dashboard/dashboard.html?game=${game.gameId}`);
-      chrome.tabs.create({ url });
+      const url = browser.runtime.getURL(`src/dashboard/dashboard.html?game=${game.gameId}`);
+      browser.tabs.create({ url });
     });
 
     list.appendChild(li);
@@ -88,14 +85,11 @@ function renderGameList(games: GameSummary[]): void {
 async function init(): Promise<void> {
   // Set dashboard link
   const dashLink = document.getElementById('dashboard-link') as HTMLAnchorElement;
-  dashLink.href = chrome.runtime.getURL('src/dashboard/dashboard.html');
+  dashLink.href = browser.runtime.getURL('src/dashboard/dashboard.html');
 
   // Load recent games
-  const popupLimit: number = await new Promise((resolve) => {
-    chrome.storage.sync.get('kb_settings', (res) => {
-      resolve((res['kb_settings']?.popupGameLimit ?? 20) || 0);
-    });
-  });
+  const syncRes = await browser.storage.sync.get('kb_settings');
+  const popupLimit: number = (syncRes['kb_settings'] as { popupGameLimit?: number } | undefined)?.popupGameLimit ?? 20;
   try {
     const resp = await sendMessage({
       type: 'GET_RECENT_GAMES',
@@ -125,15 +119,15 @@ async function init(): Promise<void> {
     fmtBtn.className = mode;
   }
 
-  chrome.storage.local.get('formatMode', (res) => {
+  browser.storage.local.get('formatMode').then((res) => {
     setFormatModeUI((res['formatMode'] as 'premier' | 'limited' | 'eternal') || 'premier');
   });
 
   fmtBtn.addEventListener('click', () => {
-    chrome.storage.local.get('formatMode', (res) => {
+    browser.storage.local.get('formatMode').then((res) => {
       const current: 'premier' | 'limited' | 'eternal' = (res['formatMode'] as 'premier' | 'limited' | 'eternal') || 'premier';
       const next = FORMAT_CYCLE[(FORMAT_CYCLE.indexOf(current) + 1) % FORMAT_CYCLE.length];
-      chrome.storage.local.set({ formatMode: next });
+      browser.storage.local.set({ formatMode: next });
       setFormatModeUI(next);
     });
   });
@@ -152,15 +146,15 @@ async function init(): Promise<void> {
   }
 
   // Read initial state (default: enabled)
-  chrome.storage.local.get('trackingEnabled', (res) => {
+  browser.storage.local.get('trackingEnabled').then((res) => {
     setTrackingUI(res['trackingEnabled'] !== false);
   });
 
   trackingBtn.addEventListener('click', () => {
-    chrome.storage.local.get('trackingEnabled', (res) => {
+    browser.storage.local.get('trackingEnabled').then((res) => {
       const current = res['trackingEnabled'] !== false;
       const next = !current;
-      chrome.storage.local.set({ trackingEnabled: next });
+      browser.storage.local.set({ trackingEnabled: next });
       setTrackingUI(next);
     });
   });

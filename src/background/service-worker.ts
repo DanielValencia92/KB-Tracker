@@ -17,23 +17,21 @@ import {
   deleteGame,
   exportAll,
 } from './db';
+import browser from 'webextension-polyfill';
 
-// MV3-safe pattern: handleMessage returns the response (or null for fire-and-forget).
-// The listener chains .then(sendResponse) synchronously so Chrome can't lose the callback.
-chrome.runtime.onMessage.addListener(
+// webextension-polyfill: returning a Promise from the listener keeps the
+// message channel open automatically — no need for sendResponse or return true.
+browser.runtime.onMessage.addListener(
   (
     message: ExtMessage,
-    _sender: chrome.runtime.MessageSender,
-    sendResponse: (response: ExtMessage | null) => void
+    _sender: browser.Runtime.MessageSender
   ) => {
-    handleMessage(message)
-      .then((resp) => { if (resp !== null) sendResponse(resp); })
+    return handleMessage(message)
+      .then((resp) => (resp !== null ? resp : undefined))
       .catch((err) => {
         console.error('[KB Tracker] service-worker error:', err);
-        sendResponse(null);
+        return undefined;
       });
-    // Return true to keep the message channel open for async responses
-    return true;
   }
 );
 

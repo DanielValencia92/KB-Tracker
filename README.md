@@ -1,6 +1,6 @@
 # KB Tracker
 
-A Chrome extension (Manifest V3) that automatically tracks, stores, and analyses your game data on [Karabast](https://play.karabast.net) — the fan-made Star Wars Unlimited simulator.
+A browser extension (Chrome & Firefox, Manifest V3) that automatically tracks, stores, and analyses your game data on [Karabast](https://play.karabast.net) — the fan-made Star Wars Unlimited simulator.
 
 ---
 
@@ -48,7 +48,7 @@ Open the full dashboard from the popup or click any game row.
   - ⛔ **Delete** — permanently remove the game record
 
 #### Settings
-- Dedicated **Settings** tab for configuring extension behaviour, persisted via `chrome.storage.sync`
+- Dedicated **Settings** tab for configuring extension behaviour, persisted via `browser.storage.sync`
 - **Display**
   - *Games shown in popup* — how many recent games appear in the extension popup (default: 5; set to 0 for all)
   - *Default dashboard tab* — which tab opens when the dashboard loads
@@ -74,19 +74,13 @@ Open the full dashboard from the popup or click any game row.
 
 ## Installation
 
-### Option A — Download a release (no build required)
+### Option A — Install without building
 
-If a pre-built release is available on the [Releases page](https://github.com/DanielValencia92/KB-Tracker/releases):
+**Chrome:** Download the latest **`kb-tracker-chrome.zip`** from the [Releases page](https://github.com/DanielValencia92/KB-Tracker/releases), unzip it, and follow the **Loading into Chrome** steps below.
 
-1. Download the latest **`kb-tracker-dist.zip`** (or similar) from the Releases page
-2. Unzip it anywhere on your computer — you'll get a `dist/` folder
-3. Open Chrome and go to **`chrome://extensions`**
-4. Turn on **Developer mode** using the toggle in the top-right corner
-5. Click **Load unpacked**
-6. Select the **`dist`** folder you just unzipped
-7. KB Tracker will appear in your extensions list — click the puzzle-piece icon in the toolbar and **pin it**
+**Firefox:** Download the latest **`kb-tracker-firefox.xpi`** from the [Releases page](https://github.com/DanielValencia92/KB-Tracker/releases) and follow the **Installing Firefox** steps below.
 
-> You do **not** need Node.js, npm, or any developer tools for this option.
+> You do **not** need Node.js, npm, or any developer tools for either of these.
 
 ---
 
@@ -102,38 +96,60 @@ cd KB-Tracker
 # 2. Install dependencies
 npm install
 
-# 3. Build
-npm run build
+# 3. Build for your browser
+npm run build:chrome    # outputs to dist-chrome/
+npm run build:firefox   # outputs to dist-firefox/
 ```
 
-### Loading the built extension into Chrome
+---
 
-Same steps as Option A — after `npm run build` finishes, a `dist/` folder will be created:
+### Loading into Chrome
 
 1. Open Chrome and go to **`chrome://extensions`**
 2. Turn on **Developer mode** using the toggle in the top-right corner
 3. Click **Load unpacked**
-4. Browse to the project folder and select the **`dist`** folder inside it
-5. KB Tracker will appear in your extensions list — click the puzzle-piece icon in the toolbar and **pin it** for easy access
+4. Select the **`dist-chrome`** folder
+5. KB Tracker will appear in your extensions list — click the puzzle-piece icon in the toolbar and **pin it**
 
-> **After any code update:** run `npm run build` again, then go back to `chrome://extensions` and click the **↺** (refresh) icon on the KB Tracker card to reload it.
+> **After any code update:** run `npm run build:chrome` again, then go back to `chrome://extensions` and click the **↺** (refresh) icon on the KB Tracker card.
+
+---
+
+### Installing Firefox
+
+KB Tracker is distributed as a **signed `.xpi`** file (signed by Mozilla via AMO, unlisted). This means it installs permanently on any standard Firefox release — no Developer Edition or config changes needed.
+
+1. Download **`kb-tracker-firefox.xpi`** from the [Releases page](https://github.com/DanielValencia92/KB-Tracker/releases)
+2. Open Firefox and go to **`about:addons`**
+3. Click the **⚙ gear icon** → **Install Add-on From File...**
+4. Select the downloaded `.xpi` file
+5. Accept the permissions prompt — KB Tracker is now permanently installed and survives browser restarts
+
+> **Updates** are not automatic. When a new version is released, download the new `.xpi` from the Releases page and repeat steps 2–4 — Firefox will update the existing install.
+
+---
 
 ### Staying up to date
 
+**Chrome:** pull the latest code, rebuild, and reload the extension:
 ```bash
 git pull
-npm run build
+npm run build:chrome
 ```
+Then go to `chrome://extensions` and click the **↺** refresh icon on the KB Tracker card.
 
-Then reload the extension as above.
+**Firefox:** download the new `.xpi` from the [Releases page](https://github.com/DanielValencia92/KB-Tracker/releases) and reinstall via `about:addons` → **⚙ gear** → **Install Add-on From File...**. Firefox will update the existing install.
+
+If building from source, use `npm run package:firefox` to produce a correctly formatted `.xpi` in `web-ext-artifacts/`, then submit it to AMO for signing before distributing.
 
 ### Watch mode (active development)
 
 ```bash
-npm run dev
+npm run dev:chrome    # rebuilds on save, outputs to dist-chrome/
+npm run dev:firefox   # rebuilds on save, outputs to dist-firefox/
 ```
 
-Rebundles automatically on every file save. Still requires a manual reload on `chrome://extensions` after each rebuild.
+Still requires a manual reload on `chrome://extensions` after each Chrome rebuild. For Firefox, use `about:debugging` → **This Firefox** → **Load Temporary Add-on...** during development.
 
 ---
 
@@ -172,9 +188,10 @@ This file contains everything needed to fully reconstruct your database on anoth
 
 | | |
 |---|---|
-| **Extension** | Chrome Manifest V3 |
+| **Extension** | Chrome & Firefox (Manifest V3) |
 | **Language** | TypeScript 5 |
-| **Bundler** | Vite 5 + [`@crxjs/vite-plugin`](https://crxjs.dev) |
+| **Bundler** | Vite 5 + [`vite-plugin-web-extension`](https://vite-plugin-web-extension.aklinker1.io) |
+| **API compatibility** | [`webextension-polyfill`](https://github.com/mozilla/webextension-polyfill) |
 | **Storage** | IndexedDB via [`idb`](https://github.com/jakearchibald/idb) |
 | **Styles** | Plain CSS (dark theme, CSS custom properties) |
 | **No runtime frameworks** | Vanilla TypeScript throughout |
@@ -194,7 +211,7 @@ src/
 │   └── interceptor.js      # MAIN-world script; patches WebSocket before Socket.IO loads
 ├── shared/
 │   ├── types.ts            # All shared TypeScript interfaces and types
-│   ├── settings.ts         # Settings schema, defaults, and chrome.storage.sync helpers
+│   ├── settings.ts         # Settings schema, defaults, and browser.storage.sync helpers
 │   ├── gameRecorder.ts     # Stateful per-game recorder; ingests game states
 │   ├── socketParser.ts     # Parses raw Socket.IO frames into typed game states
 │   ├── logParser.ts        # Formats raw chat log entries
@@ -231,4 +248,4 @@ Issues and pull requests are welcome. Please open an issue first for significant
 
 ## Disclaimer
 
-KB Tracker is a fan-made project. It is not affiliated with or endorsed by Fantasy Flight Games, Atomic Mass Games, or the Karabast development team. Star Wars Unlimited is a trademark of Lucasfilm Ltd.
+KB Tracker is a fan-made project. It is not affiliated with or endorsed by Fantasy Flight Games or the Karabast development team. Star Wars Unlimited is a trademark of Lucasfilm Ltd.

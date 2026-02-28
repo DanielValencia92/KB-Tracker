@@ -42,7 +42,7 @@ function buildPlayer(playerId: string, state: IGameState): GamePlayer {
   };
 }
 
-export type GameCompleteCallback = (record: GameRecord) => void;
+export type GameCompleteCallback = (record: GameRecord) => void | Promise<void>;
 
 export class GameRecorder {
   private gameId: string;
