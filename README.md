@@ -10,13 +10,12 @@ A Chrome extension (Manifest V3) that automatically tracks, stores, and analyses
 - Intercepts WebSocket frames from the Karabast game server with zero page modification
 - Detects game start, round progression, card plays, resources, and game completion
 - Captures per-round arena snapshots for post-game review
-- Supports **Premier**, **Limited**, and **Eternal** (`open`) formats
 - Tracking can be toggled on/off directly from the popup without reloading
 
 ### Popup
 - Live list of your 20 most recent games with WIN/LOSS/DRAW badges and format badges
 - One-click toggle: **Tracking ON / OFF**
-- Format mode selector: cycle between **PREMIER → LIMITED → ETERNAL** to manually tag games to a specific format before they're recorded
+- **Format Mode** selector — cycle between **PREMIER → LIMITED → ETERNAL** to set the format before each game. This must be set correctly before you start a game
 - **Export All Data** — downloads a full JSON backup of your entire local database
 
 ### Dashboard
@@ -198,19 +197,14 @@ src/
 
 ---
 
-## Format Detection
+## Usage
 
-Formats are detected from the server's `gameMode` field:
+1. **Set your format** — Before queuing for a game, click the Format Mode button in the popup to set it to **PREMIER**, **LIMITED**, or **ETERNAL**. This must be set correctly before the game starts
+2. **Make sure tracking is ON** — The Tracking button should show **⏺ Tracking ON**
+3. **Play your game** — KB Tracker captures everything automatically in the background
+4. **Review your data** — Open the dashboard from the popup to see your stats, card analytics, and round-by-round replays
 
-| `gameMode` value | Format |
-|---|---|
-| `premier` | Premier |
-| `nextSetPreview` | Premier (Next Set Preview) |
-| `open` | Eternal |
-
-**Limited** is detected independently: if either player's starting deck size is ≤ 35 cards, `isLimitedFormat` is set to `true` regardless of `gameMode`.
-
-The **Format Mode** button in the popup lets you manually override this before a game is saved — useful if the server doesn't report the expected `gameMode` for a given lobby type.
+> If you forget to set the format before a game, you can correct it afterwards using the **↺ Change Format** option in the Game History ⋮ menu.
 
 ---
 
