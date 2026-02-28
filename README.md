@@ -13,7 +13,7 @@ A Chrome extension (Manifest V3) that automatically tracks, stores, and analyses
 - Tracking can be toggled on/off directly from the popup without reloading
 
 ### Popup
-- Live list of your 20 most recent games with WIN/LOSS/DRAW badges and format badges
+- Live list of your most recent games with WIN/LOSS/DRAW badges and format badges (number of games shown is configurable in Settings)
 - One-click toggle: **Tracking ON / OFF**
 - **Format Mode** selector — cycle between **PREMIER → LIMITED → ETERNAL** to set the format before each game. This must be set correctly before you start a game
 - **Export All Data** — downloads a full JSON backup of your entire local database
@@ -39,13 +39,25 @@ Open the full dashboard from the popup or click any game row.
 - Sort by any metric via dropdown
 
 #### Game History
-- Full paginated game log with date, format badge, leader chips with card-image tooltips, result, and round count
+- Full game log with date, format badge, leader chips with card-image tooltips, result, and round count
 - Filter by format
 - **⋮ Options menu** per row:
   - ▶ **Review** — opens the round-by-round review modal
   - ↺ **Change Format** — cycle the saved format (Premier → Limited → Eternal)
   - 👈 **Hide from Stats** / **👀 Show in Stats** — exclude a game from aggregate calculations without deleting it (shown at reduced opacity)
   - ⛔ **Delete** — permanently remove the game record
+
+#### Settings
+- Dedicated **Settings** tab for configuring extension behaviour, persisted via `chrome.storage.sync`
+- **Display**
+  - *Games shown in popup* — how many recent games appear in the extension popup (default: 5; set to 0 for all)
+  - *Default dashboard tab* — which tab opens when the dashboard loads
+  - *Default format filter* — pre-select a format across all filter dropdowns on load
+- **Stats**
+  - *Minimum games threshold* — hide matchup rows with fewer than N games to avoid misleading small-sample win rates (default: 5)
+- **Data**
+  - *Data retention limit* — keep only the N most recent games; "Trim Now" applies immediately (0 = unlimited)
+  - *Confirm before deleting games* — toggle the confirmation dialog for destructive delete actions
 
 #### Round Review Modal
 - Step through each round's arena snapshot: hand, ground arena, space arena, discard, resources
@@ -182,6 +194,7 @@ src/
 │   └── interceptor.js      # MAIN-world script; patches WebSocket before Socket.IO loads
 ├── shared/
 │   ├── types.ts            # All shared TypeScript interfaces and types
+│   ├── settings.ts         # Settings schema, defaults, and chrome.storage.sync helpers
 │   ├── gameRecorder.ts     # Stateful per-game recorder; ingests game states
 │   ├── socketParser.ts     # Parses raw Socket.IO frames into typed game states
 │   ├── logParser.ts        # Formats raw chat log entries
