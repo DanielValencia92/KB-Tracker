@@ -1026,6 +1026,79 @@
         .print-log-title { font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin-bottom: 4px; }
         .print-log-line { font-size: 9px; color: #444; line-height: 1.5; }
       }
+
+      /* ── Settings tab ── */
+      .settings-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 16px 18px;
+        margin-bottom: 18px;
+      }
+      .settings-section-title {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        margin-bottom: 14px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border);
+      }
+      .settings-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .settings-row:last-child { border-bottom: none; }
+      .settings-label {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-size: 12px;
+        color: var(--text);
+        flex: 1;
+      }
+      .settings-hint {
+        font-size: 10px;
+        color: var(--muted);
+        line-height: 1.4;
+      }
+      .settings-input {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        flex-shrink: 0;
+      }
+      input.settings-input[type="number"] { width: 80px; text-align: right; }
+      .settings-checkbox { accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; cursor: pointer; }
+      .settings-save-btn {
+        background: var(--accent);
+        border: none;
+        color: #000;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 7px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .settings-save-btn:hover { background: var(--accent2); }
+      .settings-trim-btn {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .settings-trim-btn:hover { border-color: var(--loss); color: var(--loss); }
   </style>
   </head>
   <body>
@@ -1040,6 +1113,8 @@
         <div class="nav-section">Tools</div>
         <button class="nav-btn" data-tab="tools">Import &amp; Aggregate</button>
         <button class="nav-btn" id="export-btn">Export DB</button>
+        <div class="nav-section">Preferences</div>
+        <button class="nav-btn" data-tab="settings">Settings</button>
         <a class="nav-github" href="https://github.com/DanielValencia92/KB-Tracker" target="_blank" rel="noopener">
           <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
@@ -1104,6 +1179,7 @@
               <tbody id="mu-body"></tbody>
             </table>
           </div>
+          <div id="mu-threshold-note" style="font-size:11px;color:var(--muted);margin-top:8px;min-height:16px"></div>
         </div>
 
         <!-- ─ CARD STATS ─────────────────────────────────── -->
@@ -1211,6 +1287,83 @@
               </p>
               <button id="tools-merge-btn">&#x1F4BE; Merge All Imports into Local DB</button>
             </div>
+          </div>
+        </div>
+
+        <!-- ─ SETTINGS ────────────────────────────────────── -->
+        <div class="tab-content" id="tab-settings">
+          <h2 class="visible">Settings</h2>
+
+          <div class="settings-section">
+            <div class="settings-section-title">Display</div>
+            <div class="settings-row">
+              <label class="settings-label" for="set-history-size">
+                Games shown in Popup
+                <span class="settings-hint">Number of recent games listed in the extension popup (0 = show all).</span>
+              </label>
+              <input type="number" id="set-history-size" min="0" max="9999" step="1" class="settings-input" />
+            </div>
+            <div class="settings-row">
+              <label class="settings-label" for="set-default-tab">
+                Default Tab
+                <span class="settings-hint">Which tab opens when the dashboard loads.</span>
+              </label>
+              <select id="set-default-tab" class="settings-input">
+                <option value="overview">Overview</option>
+                <option value="matchups">Matchups</option>
+                <option value="cards">Card Stats</option>
+                <option value="history">Game History</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <label class="settings-label" for="set-default-format">
+                Default Format Filter
+                <span class="settings-hint">Pre-select this format on all filter dropdowns when the dashboard loads.</span>
+              </label>
+              <select id="set-default-format" class="settings-input">
+                <option value="">All</option>
+                <option value="premier">Premier</option>
+                <option value="limited">Limited</option>
+                <option value="eternal">Eternal</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">Stats</div>
+            <div class="settings-row">
+              <label class="settings-label" for="set-min-games">
+                Minimum Games for Matchup Stats
+                <span class="settings-hint">Hide matchup rows with fewer than this many games. Set to 0 to show all.</span>
+              </label>
+              <input type="number" id="set-min-games" min="0" max="100" step="1" class="settings-input" />
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">Data</div>
+            <div class="settings-row">
+              <label class="settings-label" for="set-confirm-clear">
+                Confirm before deleting games
+                <span class="settings-hint">Show a confirmation dialog before permanently deleting a game record.</span>
+              </label>
+              <input type="checkbox" id="set-confirm-clear" class="settings-checkbox" />
+            </div>
+            <div class="settings-row">
+              <label class="settings-label" for="set-retention">
+                Data Retention Limit
+                <span class="settings-hint">Maximum games to keep in the database (0 = unlimited). Oldest games are removed first. Click Trim Now to apply immediately.</span>
+              </label>
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+                <input type="number" id="set-retention" min="0" max="9999" step="1" class="settings-input" />
+                <button id="set-retention-trim" class="settings-trim-btn">Trim Now</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+            <button id="settings-save-btn" class="settings-save-btn">Save Settings</button>
+            <span id="settings-save-status" style="font-size:11px;color:var(--muted)"></span>
           </div>
         </div>
       </main>

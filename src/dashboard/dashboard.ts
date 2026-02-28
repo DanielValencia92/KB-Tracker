@@ -17,12 +17,14 @@ import {
   getBaseColorList,
   getSnapshots,
   deleteGame,
+  trimGames,
   updateGameFormat,
   toggleGameHidden,
   exportAll,
   importGames,
   type StoredGame,
 } from '../background/db';
+import { loadSettings, saveSettings, DEFAULT_SETTINGS, type KBSettings } from '../shared/settings';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────────────
 
@@ -168,6 +170,7 @@ function makeSortable<T extends Record<string, unknown>>(
 
 let _allGames: GameSummary[] = [];
 let _ghGames:  GameSummary[] = [];
+let _settings: KBSettings = { ...DEFAULT_SETTINGS };
 
 async function loadOverview(): Promise<void> {
   const formatFilter = (document.getElementById('ov-format') as HTMLSelectElement).value;
@@ -297,7 +300,16 @@ let _muData: MatchupRow[] = [];
 
 function renderMuRows(rows: MatchupRow[]): void {
   const body = document.getElementById('mu-body')!;
-  body.innerHTML = rows
+  const threshold = _settings.minGamesThreshold;
+  const filtered = threshold > 0 ? rows.filter((r) => r.totalGames >= threshold) : rows;
+  const hidden = rows.length - filtered.length;
+  const note = document.getElementById('mu-threshold-note');
+  if (note) {
+    note.textContent = hidden > 0
+      ? `${hidden} matchup${hidden !== 1 ? 's' : ''} hidden (min. ${threshold} games threshold — adjust in Settings)`
+      : '';
+  }
+  body.innerHTML = filtered
     .map(
       (r) => `
     <tr>
@@ -583,6 +595,35 @@ document.getElementById('cs-base-color')!.addEventListener('change', loadCardSta
 
 // ─── Game History ────────────────────────────────────────────────────────────
 
+function gameToHistoryRow(g: GameSummary): string {
+  const p0 = g.players[0];
+  const p1 = g.players[1];
+  const isWin = g.winner === p0.name;
+  const isDraw = g.winner === null;
+  const res = isDraw ? 'Draw' : isWin ? 'Win' : 'Loss';
+  const resColor = isDraw ? 'var(--draw)' : isWin ? 'var(--win)' : 'var(--loss)';
+  const fmtClass = g.isLimitedFormat ? 'limited' : g.format === 'open' ? 'eternal' : 'premier';
+  const fmtLabel = g.isLimitedFormat ? 'Limited' : g.format === 'open' ? 'Eternal' : 'Premier';
+  const isHidden = g.hidden ?? false;
+  const curFmt: 'premier' | 'limited' | 'eternal' = g.isLimitedFormat ? 'limited' : g.format === 'open' ? 'eternal' : 'premier';
+  const FMT_NEXT: Record<string, string> = { premier: 'Limited', limited: 'Eternal', eternal: 'Premier' };
+  return `
+    <tr${isHidden ? ' class="gh-row-hidden"' : ''}>
+      <td>${formatDate(g.completedAt)}</td>
+      <td><span class="badge ${fmtClass}">${fmtLabel}</span></td>
+      <td>${cardChip(p0.leaderName || p0.leaderId, p0.leaderSetId)}</td>
+      <td>${cardChip(p1.leaderName || p1.leaderId, p1.leaderSetId)}</td>
+      <td style="color:${resColor};font-weight:600">${res}</td>
+      <td>${g.rounds}</td>
+      <td><button class="gh-3dot"
+        data-gameid="${g.gameId}"
+        data-hidden="${isHidden ? '1' : '0'}"
+        data-curfmt="${curFmt}"
+        data-nextfmt="${FMT_NEXT[curFmt]}"
+      >&#8942;</button></td>
+    </tr>`;
+}
+
 async function loadHistory(): Promise<void> {
   const formatFilter = (document.getElementById('gh-format') as HTMLSelectElement).value;
 
@@ -592,38 +633,7 @@ async function loadHistory(): Promise<void> {
   else if (formatFilter === 'premier') games = games.filter((g) => !g.isLimitedFormat && g.format !== 'open');
 
   _ghGames = games;
-  const body = document.getElementById('gh-body')!;
-  body.innerHTML = games
-    .map((g) => {
-      const p0 = g.players[0];
-      const p1 = g.players[1];
-      const isWin = g.winner === p0.name;
-      const isDraw = g.winner === null;
-      const res = isDraw ? 'Draw' : isWin ? 'Win' : 'Loss';
-      const resColor = isDraw ? 'var(--draw)' : isWin ? 'var(--win)' : 'var(--loss)';
-      const fmtClass = g.isLimitedFormat ? 'limited' : g.format === 'open' ? 'eternal' : 'premier';
-      const fmtLabel = g.isLimitedFormat ? 'Limited' : g.format === 'open' ? 'Eternal' : 'Premier';
-      const isHidden = g.hidden ?? false;
-      const curFmt: 'premier' | 'limited' | 'eternal' = g.isLimitedFormat ? 'limited' : g.format === 'open' ? 'eternal' : 'premier';
-      const FMT_NEXT: Record<string, string> = { premier: 'Limited', limited: 'Eternal', eternal: 'Premier' };
-
-      return `
-        <tr${isHidden ? ' class="gh-row-hidden"' : ''}>
-          <td>${formatDate(g.completedAt)}</td>
-          <td><span class="badge ${fmtClass}">${fmtLabel}</span></td>
-          <td>${cardChip(p0.leaderName || p0.leaderId, p0.leaderSetId)}</td>
-          <td>${cardChip(p1.leaderName || p1.leaderId, p1.leaderSetId)}</td>
-          <td style="color:${resColor};font-weight:600">${res}</td>
-          <td>${g.rounds}</td>
-          <td><button class="gh-3dot"
-            data-gameid="${g.gameId}"
-            data-hidden="${isHidden ? '1' : '0'}"
-            data-curfmt="${curFmt}"
-            data-nextfmt="${FMT_NEXT[curFmt]}"
-          >&#8942;</button></td>
-        </tr>`;
-    })
-    .join('');
+  document.getElementById('gh-body')!.innerHTML = games.map(gameToHistoryRow).join('');
 }
 
 document.getElementById('gh-format')!.addEventListener('change', loadHistory);
@@ -688,7 +698,7 @@ document.getElementById('gh-menu-hide')!.addEventListener('click', async () => {
 
 document.getElementById('gh-menu-delete')!.addEventListener('click', async () => {
   _ghMenu.style.display = 'none';
-  if (!confirm('Delete this game record?')) return;
+  if (_settings.confirmBeforeClear && !confirm('Delete this game record?')) return;
   await deleteGame(_ghMenuGameId);
   await Promise.all([loadHistory(), loadOverview()]);
 });
@@ -1368,7 +1378,71 @@ document.getElementById('tools-merge-btn')!.addEventListener('click', async () =
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
+// ─── Settings ─────────────────────────────────────────────────────────────────────────────
+
+function populateSettingsForm(): void {
+  (document.getElementById('set-history-size') as HTMLInputElement).value = String(_settings.popupGameLimit);
+  (document.getElementById('set-default-tab') as HTMLSelectElement).value = _settings.defaultTab;
+  (document.getElementById('set-default-format') as HTMLSelectElement).value = _settings.defaultFormat;
+  (document.getElementById('set-min-games') as HTMLInputElement).value = String(_settings.minGamesThreshold);
+  (document.getElementById('set-confirm-clear') as HTMLInputElement).checked = _settings.confirmBeforeClear;
+  (document.getElementById('set-retention') as HTMLInputElement).value = String(_settings.dataRetentionLimit);
+}
+
+function applySettingsDefaults(): void {
+  const fmt = _settings.defaultFormat;
+  for (const id of ['ov-format', 'mu-format', 'cs-format', 'gh-format']) {
+    const sel = document.getElementById(id) as HTMLSelectElement | null;
+    if (sel && fmt) sel.value = fmt;
+  }
+  // Activate the default tab (skip if URL forces a specific game — that overrides to history)
+  const params = new URLSearchParams(location.search);
+  if (!params.get('game')) {
+    const tabId = _settings.defaultTab;
+    tabs.forEach((b) => b.classList.remove('active'));
+    contents.forEach((c) => c.classList.remove('active'));
+    const btn = document.querySelector<HTMLButtonElement>(`[data-tab="${tabId}"]`);
+    btn?.classList.add('active');
+    document.getElementById(`tab-${tabId}`)?.classList.add('active');
+  }
+}
+
+document.getElementById('settings-save-btn')!.addEventListener('click', async () => {
+  const newSettings: KBSettings = {
+    popupGameLimit:     Math.max(0, parseInt((document.getElementById('set-history-size') as HTMLInputElement).value) || 0),
+    defaultTab:         (document.getElementById('set-default-tab') as HTMLSelectElement).value as KBSettings['defaultTab'],
+    defaultFormat:      (document.getElementById('set-default-format') as HTMLSelectElement).value as KBSettings['defaultFormat'],
+    minGamesThreshold:  Math.max(0, parseInt((document.getElementById('set-min-games') as HTMLInputElement).value) || 0),
+    confirmBeforeClear: (document.getElementById('set-confirm-clear') as HTMLInputElement).checked,
+    dataRetentionLimit: Math.max(0, parseInt((document.getElementById('set-retention') as HTMLInputElement).value) || 0),
+  };
+  await saveSettings(newSettings);
+  _settings = newSettings;
+  const status = document.getElementById('settings-save-status')!;
+  status.textContent = '✓ Saved';
+  setTimeout(() => { status.textContent = ''; }, 2500);
+  // Re-render views affected by changed settings
+  renderMuRows(_muData);
+  await loadHistory();
+});
+
+document.getElementById('set-retention-trim')!.addEventListener('click', async () => {
+  const limit = Math.max(0, parseInt((document.getElementById('set-retention') as HTMLInputElement).value) || 0);
+  if (limit <= 0) {
+    alert('Set a retention limit greater than 0 before trimming.');
+    return;
+  }
+  if (!confirm(`Remove the oldest games, keeping only the most recent ${limit}?\n\nThis cannot be undone.`)) return;
+  const removed = await trimGames(limit);
+  alert(`Done — ${removed} game${removed !== 1 ? 's' : ''} removed.`);
+  await Promise.all([loadOverview(), loadMatchups(), loadHistory()]);
+});
+
 async function init(): Promise<void> {
+  _settings = await loadSettings();
+  applySettingsDefaults();
+  populateSettingsForm();
+
   await loadLeaderPanel();
   await loadBaseColorDropdown();
   await Promise.all([loadOverview(), loadMatchups(), loadCardStats(), loadHistory()]);

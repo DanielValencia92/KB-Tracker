@@ -8,8 +8,6 @@ import type { ExtMessage, StoredGame } from '../shared/types';
 // Fix StoredGame import: use the full GameRecord but treat cardEvents/rawLog as optional
 type GameSummary = Omit<import('../shared/types').GameRecord, 'cardEvents' | 'rawLog'>;
 
-const RECENT_LIMIT = 20;
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function sendMessage<T extends ExtMessage>(
@@ -93,10 +91,15 @@ async function init(): Promise<void> {
   dashLink.href = chrome.runtime.getURL('src/dashboard/dashboard.html');
 
   // Load recent games
+  const popupLimit: number = await new Promise((resolve) => {
+    chrome.storage.sync.get('kb_settings', (res) => {
+      resolve((res['kb_settings']?.popupGameLimit ?? 20) || 0);
+    });
+  });
   try {
     const resp = await sendMessage({
       type: 'GET_RECENT_GAMES',
-      limit: RECENT_LIMIT,
+      limit: popupLimit > 0 ? popupLimit : 5000,
     } as Extract<ExtMessage, { type: 'GET_RECENT_GAMES' }>);
 
     if (resp.type === 'GET_RECENT_GAMES_RESPONSE') {

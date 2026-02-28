@@ -397,6 +397,18 @@ export async function deleteGame(gameId: string): Promise<void> {
   await tx.done;
 }
 
+export async function trimGames(maxGames: number): Promise<number> {
+  if (maxGames <= 0) return 0;
+  const db = await getDb();
+  // getAllFromIndex returns ascending by date; oldest entries come first
+  const all = await db.getAllFromIndex('games', 'by_date');
+  const toDelete = all.slice(0, Math.max(0, all.length - maxGames));
+  for (const game of toDelete) {
+    await deleteGame(game.gameId);
+  }
+  return toDelete.length;
+}
+
 export async function updateGameFormat(
   gameId: string,
   formatMode: 'premier' | 'limited' | 'eternal'
