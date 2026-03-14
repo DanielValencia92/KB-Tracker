@@ -134,7 +134,15 @@ export type ExtMessage =
   | { type: 'EXPORT_ALL' }
   | { type: 'EXPORT_ALL_RESPONSE'; data: string }
   | { type: 'DELETE_GAME'; gameId: string }
-  | { type: 'DELETE_GAME_RESPONSE'; success: boolean };
+  | { type: 'DELETE_GAME_RESPONSE'; success: boolean }
+  // ── Auth / sync messages ──
+  | { type: 'AUTH_SIGNED_IN'; payload: AuthState }
+  | { type: 'AUTH_SIGN_OUT' }
+  | { type: 'GET_AUTH_STATE' }
+  | { type: 'GET_AUTH_STATE_RESPONSE'; auth: AuthState | null }
+  | { type: 'SYNC_PUSH_LOCAL' }
+  | { type: 'SYNC_PULL' }
+  | { type: 'SYNC_STATUS_RESPONSE'; status: SyncStatus };
 
 // ─── Persisted game record ───────────────────────────────────────────────────
 
@@ -287,4 +295,27 @@ export interface MatchupRow {
   draws: number;
   totalGames: number;
   winRate: number;
+}
+
+// ─── Firebase / cloud sync types ─────────────────────────────────────────────
+
+/** Credentials persisted in browser.storage.local after Google sign-in. */
+export interface AuthState {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL: string;
+  /** Firebase ID token (JWT) — expires after 1 hour */
+  idToken: string;
+  /** Unix ms timestamp when idToken expires */
+  idTokenExpiry: number;
+  /** Long-lived refresh token used to obtain new ID tokens */
+  refreshToken: string;
+}
+
+export interface SyncStatus {
+  /** ISO date of last successful sync, or null if never synced */
+  lastSynced: string | null;
+  syncing: boolean;
+  error: string | null;
 }

@@ -242,6 +242,13 @@ export class GameRecorder {
   private finalize(finalState: IGameState): void {
     this.completed = true;
 
+    // Discard spectated games — localPlayerId will be null when playerUpdate never
+    // resolved to either player (i.e. the user is a spectator, not a participant).
+    if (!this.localPlayerId) {
+      console.info('[KB Tracker] spectated game discarded (not a player):', this.gameId);
+      return;
+    }
+
     // Flush remaining logs and HP changes into the last snapshot
     if (this.snapshots.length > 0) {
       const last = this.snapshots[this.snapshots.length - 1];

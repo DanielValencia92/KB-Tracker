@@ -450,6 +450,24 @@ export async function exportAll(): Promise<string> {
   );
 }
 
+/**
+ * Returns all stored games with their card events and snapshots for cloud sync.
+ * raw_logs are excluded from sync (too large, lower value).
+ */
+export async function getAllForSync(): Promise<{
+  games: StoredGame[];
+  events: CardEvent[];
+  snapshots: { gameId: string; snapshots: RoundSnapshot[] }[];
+}> {
+  const db = await getDb();
+  const [games, events, snapshots] = await Promise.all([
+    db.getAll('games'),
+    db.getAll('card_events'),
+    db.getAll('game_snapshots'),
+  ]);
+  return { games, events, snapshots };
+}
+
 export async function importGames(
   games: StoredGame[],
   events: CardEvent[],

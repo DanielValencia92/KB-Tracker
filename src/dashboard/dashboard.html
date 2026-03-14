@@ -1365,6 +1365,59 @@
             <button id="settings-save-btn" class="settings-save-btn">Save Settings</button>
             <span id="settings-save-status" style="font-size:11px;color:var(--muted)"></span>
           </div>
+
+          <!-- ── Account / Cloud Sync ── -->
+          <div class="settings-section" id="account-section" style="margin-top:20px">
+            <div class="settings-section-title">Account &amp; Cloud Sync</div>
+
+            <!-- Signed-out state -->
+            <div id="account-signed-out">
+              <div class="settings-row">
+                <label class="settings-label">
+                  Google account
+                  <span class="settings-hint">Sign in to sync your game data across devices using Firebase. Your data stays private — only you can access it.</span>
+                </label>
+                <button id="account-signin-btn" class="settings-trim-btn" style="border-color:var(--accent);color:var(--accent)">Sign in with Google</button>
+              </div>
+            </div>
+
+            <!-- Signed-in state (hidden until auth loaded) -->
+            <div id="account-signed-in" style="display:none">
+              <div class="settings-row">
+                <label class="settings-label">
+                  Signed in as
+                  <span class="settings-hint" id="account-email"></span>
+                </label>
+                <button id="account-signout-btn" class="settings-trim-btn">Sign out</button>
+              </div>
+              <div class="settings-row">
+                <label class="settings-label">
+                  Auto-sync
+                  <span class="settings-hint">Automatically push each new game to the cloud after it is recorded.</span>
+                </label>
+                <input type="checkbox" id="set-auto-sync" class="settings-checkbox" />
+              </div>
+              <div class="settings-row">
+                <label class="settings-label">
+                  Manual sync
+                  <span class="settings-hint" id="account-sync-status">Push all local games to the cloud, or pull the latest data.</span>
+                </label>
+                <div style="display:flex;gap:8px;flex-shrink:0">
+                  <button id="account-push-btn" class="settings-trim-btn">↑ Push local</button>
+                  <button id="account-pull-btn" class="settings-trim-btn">↓ Pull cloud</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload prompt (shown after first sign-in when local games exist) -->
+            <div id="account-upload-prompt" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-top:8px">
+              <p style="font-size:12px;margin-bottom:10px">You have local games that haven't been synced yet. Would you like to upload them to the cloud?</p>
+              <div style="display:flex;gap:8px">
+                <button id="account-upload-yes" class="settings-trim-btn" style="border-color:var(--win);color:var(--win)">Yes, upload now</button>
+                <button id="account-upload-no"  class="settings-trim-btn">Skip for now</button>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>

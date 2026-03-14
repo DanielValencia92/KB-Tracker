@@ -9,3 +9,5 @@ web-ext-artifacts/
 .env.local
 *.xpi
 *.zip
+*.pem
+*.crx

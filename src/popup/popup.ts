@@ -172,6 +172,68 @@ async function init(): Promise<void> {
       URL.revokeObjectURL(url);
     }
   });
+
+  // ─── Auth UI ───────────────────────────────────────────────────────────────
+
+  const authLabel      = document.getElementById('auth-label')!;
+  const authSyncStatus = document.getElementById('auth-sync-status')!;
+  const signinBtn      = document.getElementById('signin-popup-btn')!;
+  const signoutBtn     = document.getElementById('signout-btn')!;
+
+  function renderAuthState(auth: import('../shared/types').AuthState | null): void {
+    if (auth) {
+      authLabel.textContent = auth.email || auth.displayName || 'Signed in';
+      signinBtn.style.display = 'none';
+      signoutBtn.style.display = '';
+    } else {
+      authLabel.textContent = 'Not signed in';
+      signinBtn.style.display = '';
+      signoutBtn.style.display = 'none';
+      authSyncStatus.textContent = '';
+    }
+  }
+
+  function renderSyncStatus(status: import('../shared/types').SyncStatus): void {
+    if (status.syncing) {
+      authSyncStatus.textContent = '↻ Syncing…';
+      authSyncStatus.className = 'auth-sync-status syncing';
+    } else if (status.error) {
+      authSyncStatus.textContent = '✕ Sync error';
+      authSyncStatus.className = 'auth-sync-status error';
+    } else if (status.lastSynced) {
+      const d = new Date(status.lastSynced);
+      authSyncStatus.textContent = `✓ ${d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+      authSyncStatus.className = 'auth-sync-status';
+    } else {
+      authSyncStatus.textContent = '';
+      authSyncStatus.className = 'auth-sync-status';
+    }
+  }
+
+  // Load current auth state
+  const authResp = await sendMessage({ type: 'GET_AUTH_STATE' } as Extract<ExtMessage, { type: 'GET_AUTH_STATE' }>);
+  if (authResp.type === 'GET_AUTH_STATE_RESPONSE') {
+    renderAuthState(authResp.auth);
+  }
+
+  // Sign-in: open the auth page in a new tab
+  signinBtn.addEventListener('click', () => {
+    browser.tabs.create({ url: browser.runtime.getURL('src/auth/auth.html') });
+  });
+
+  // Sign-out
+  signoutBtn.addEventListener('click', async () => {
+    await browser.storage.local.remove('kb_auth');
+    await sendMessage({ type: 'AUTH_SIGN_OUT' } as Extract<ExtMessage, { type: 'AUTH_SIGN_OUT' }>);
+    renderAuthState(null);
+  });
+
+  // Listen for sync-status updates broadcast by the service worker
+  browser.runtime.onMessage.addListener((msg: ExtMessage) => {
+    if (msg.type === 'SYNC_STATUS_RESPONSE') {
+      renderSyncStatus(msg.status);
+    }
+  });
 }
 
 init();
