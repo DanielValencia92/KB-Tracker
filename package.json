@@ -1,6 +1,6 @@
 {
   "name": "kb-tracker",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Karabast private lobby stats tracker – browser extension",
   "private": true,
   "type": "module",

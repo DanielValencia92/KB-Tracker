@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm+jxN3jOWbBFY37sQ9Zk7JX46bpuH+SFoOYzSS1JWZ9SMOkkUN38DP7Jyabtk9wcjFBIJh5i/JOH6QrlVSnfOtPNxhHOR0kB05j0rSqiNt3EkVw00lvTdPABM4BHOgjZwWTg6xPta++byG8mOXLICdAJN3rp5p1KV/XTI4HcteGe8HzFsF9vxb8ACJS3ny487QIUZ43mUaROTERoi26N2AqlgdPxBxAEk6DTSaZ+plnhYVBDF2mRODQTJb3FIInMr+bsnEPx0VmvzcDAe1gTsZ8lIp4wq8tYNWfKZWrPM42q4XCRxnYNdg8xj7klmPHID9K+F1sodPl/PukqG6/qoQIDAQAB",
   "name": "KB Tracker",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Tracks private lobby & limited format game data for Karabast (Star Wars Unlimited).",
   "permissions": [
     "storage",
