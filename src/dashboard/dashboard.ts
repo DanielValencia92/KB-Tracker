@@ -6,6 +6,9 @@ import type {
   MatchupRow,
   PlayerSnapshot,
   RoundSnapshot,
+  AuthState,
+  SyncStatus,
+  ExtMessage,
 } from '../shared/types';
 import { cardImageUrl } from '../shared/cardUtils';
 import { formatLogEntry } from '../shared/logParser';
@@ -25,6 +28,7 @@ import {
   type StoredGame,
 } from '../background/db';
 import { loadSettings, saveSettings, DEFAULT_SETTINGS, type KBSettings } from '../shared/settings';
+import browser from 'webextension-polyfill';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────────────
 
@@ -1390,6 +1394,7 @@ function populateSettingsForm(): void {
   (document.getElementById('set-min-games') as HTMLInputElement).value = String(_settings.minGamesThreshold);
   (document.getElementById('set-confirm-clear') as HTMLInputElement).checked = _settings.confirmBeforeClear;
   (document.getElementById('set-retention') as HTMLInputElement).value = String(_settings.dataRetentionLimit);
+  (document.getElementById('set-auto-sync') as HTMLInputElement).checked = _settings.autoSyncEnabled;
 }
 
 function applySettingsDefaults(): void {
@@ -1418,6 +1423,7 @@ document.getElementById('settings-save-btn')!.addEventListener('click', async ()
     minGamesThreshold:  Math.max(0, parseInt((document.getElementById('set-min-games') as HTMLInputElement).value) || 0),
     confirmBeforeClear: (document.getElementById('set-confirm-clear') as HTMLInputElement).checked,
     dataRetentionLimit: Math.max(0, parseInt((document.getElementById('set-retention') as HTMLInputElement).value) || 0),
+    autoSyncEnabled:    (document.getElementById('set-auto-sync') as HTMLInputElement).checked,
   };
   await saveSettings(newSettings);
   _settings = newSettings;
@@ -1441,10 +1447,110 @@ document.getElementById('set-retention-trim')!.addEventListener('click', async (
   await Promise.all([loadOverview(), loadMatchups(), loadHistory()]);
 });
 
+// ─── Account / sync section ───────────────────────────────────────────────────
+
+function renderAccountAuth(auth: AuthState | null): void {
+  const signedIn  = document.getElementById('account-signed-in')!;
+  const signedOut = document.getElementById('account-signed-out')!;
+  const email     = document.getElementById('account-email')!;
+  if (auth) {
+    signedIn.style.display  = '';
+    signedOut.style.display = 'none';
+    email.textContent = auth.email || auth.displayName || auth.uid;
+  } else {
+    signedIn.style.display  = 'none';
+    signedOut.style.display = '';
+  }
+}
+
+function renderAccountSyncStatus(status: SyncStatus): void {
+  const el = document.getElementById('account-sync-status')!;
+  const pushBtn = document.getElementById('account-push-btn') as HTMLButtonElement;
+  const pullBtn = document.getElementById('account-pull-btn') as HTMLButtonElement;
+  if (status.syncing) {
+    el.textContent = '↻ Syncing…';
+    pushBtn.disabled = true;
+    pullBtn.disabled = true;
+  } else if (status.error) {
+    el.textContent = `✕ Error: ${status.error}`;
+    pushBtn.disabled = false;
+    pullBtn.disabled = false;
+  } else if (status.lastSynced) {
+    el.textContent = `✓ Last synced: ${new Date(status.lastSynced).toLocaleString()}`;
+    pushBtn.disabled = false;
+    pullBtn.disabled = false;
+  } else {
+    el.textContent = 'Push all local games to the cloud, or pull the latest data.';
+    pushBtn.disabled = false;
+    pullBtn.disabled = false;
+  }
+}
+
+function showUploadPrompt(): void {
+  document.getElementById('account-upload-prompt')!.style.display = '';
+}
+
+// Sign-in button → open auth tab
+document.getElementById('account-signin-btn')!.addEventListener('click', () => {
+  browser.tabs.create({ url: browser.runtime.getURL('src/auth/auth.html') });
+});
+
+// Sign-out button
+document.getElementById('account-signout-btn')!.addEventListener('click', async () => {
+  await browser.storage.local.remove('kb_auth');
+  await browser.runtime.sendMessage({ type: 'AUTH_SIGN_OUT' } as ExtMessage);
+  renderAccountAuth(null);
+});
+
+// Push local → cloud
+document.getElementById('account-push-btn')!.addEventListener('click', async () => {
+  renderAccountSyncStatus({ lastSynced: null, syncing: true, error: null });
+  const resp = await browser.runtime.sendMessage({ type: 'SYNC_PUSH_LOCAL' } as ExtMessage) as ExtMessage;
+  if (resp?.type === 'SYNC_STATUS_RESPONSE') renderAccountSyncStatus(resp.status);
+});
+
+// Pull cloud → local
+document.getElementById('account-pull-btn')!.addEventListener('click', async () => {
+  renderAccountSyncStatus({ lastSynced: null, syncing: true, error: null });
+  const resp = await browser.runtime.sendMessage({ type: 'SYNC_PULL' } as ExtMessage) as ExtMessage;
+  if (resp?.type === 'SYNC_STATUS_RESPONSE') {
+    renderAccountSyncStatus(resp.status);
+    // Refresh views with any newly pulled data
+    await Promise.all([loadOverview(), loadMatchups(), loadCardStats(), loadHistory()]);
+  }
+});
+
+// Upload prompt — "Yes, upload now"
+document.getElementById('account-upload-yes')!.addEventListener('click', async () => {
+  document.getElementById('account-upload-prompt')!.style.display = 'none';
+  renderAccountSyncStatus({ lastSynced: null, syncing: true, error: null });
+  const resp = await browser.runtime.sendMessage({ type: 'SYNC_PUSH_LOCAL' } as ExtMessage) as ExtMessage;
+  if (resp?.type === 'SYNC_STATUS_RESPONSE') renderAccountSyncStatus(resp.status);
+});
+
+// Upload prompt — "Skip for now"
+document.getElementById('account-upload-no')!.addEventListener('click', () => {
+  document.getElementById('account-upload-prompt')!.style.display = 'none';
+});
+
+// Listen for broadcast sync-status updates from the service worker
+browser.runtime.onMessage.addListener((msg: ExtMessage) => {
+  if (msg.type === 'SYNC_STATUS_RESPONSE') {
+    renderAccountSyncStatus(msg.status);
+    if ((msg.status as SyncStatus & { pendingUploadPrompt?: boolean }).pendingUploadPrompt) {
+      showUploadPrompt();
+    }
+  }
+});
+
 async function init(): Promise<void> {
   _settings = await loadSettings();
   applySettingsDefaults();
   populateSettingsForm();
+
+  // Load auth state and render account section
+  const authRes = await browser.storage.local.get('kb_auth');
+  renderAccountAuth((authRes['kb_auth'] as AuthState | undefined) ?? null);
 
   await loadLeaderPanel();
   await loadBaseColorDropdown();

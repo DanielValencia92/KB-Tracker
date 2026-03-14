@@ -10,11 +10,15 @@ const target = (process.env.TARGET ?? 'chrome') as 'chrome' | 'firefox';
 // Firefox MV3 uses `background.scripts` (array) — same script, different field name.
 function buildManifest() {
   if (target === 'firefox') {
-    const { background, ...rest } = manifestJson as Record<string, unknown> & {
+    const { background, key: _key, permissions, ...rest } = manifestJson as Record<string, unknown> & {
       background: { service_worker: string; type: string };
+      key?: string;
+      permissions: string[];
     };
     return {
       ...rest,
+      // Firefox doesn't support the chrome.identity API, so strip that permission
+      permissions: (permissions ?? []).filter((p: string) => p !== 'identity'),
       background: {
         scripts: [background.service_worker],
         type: background.type,
@@ -33,9 +37,9 @@ export default defineConfig({
   plugins: [
     webExtension({
       manifest: buildManifest,
-      // dashboard.html is opened via runtime.getURL so it is not in the manifest;
-      // declare it here so the bundler includes and rewrites it.
-      additionalInputs: ['src/dashboard/dashboard.html'],
+      // dashboard.html and auth.html are opened via runtime.getURL so they are
+      // not in the manifest; declare them here so the bundler includes them.
+      additionalInputs: ['src/dashboard/dashboard.html', 'src/auth/auth.html'],
       browser: target,
     }),
     viteStaticCopy({

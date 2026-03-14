@@ -15,6 +15,8 @@ export interface KBSettings {
   dataRetentionLimit: number;
   /** Show a confirm() dialog before permanently deleting a game */
   confirmBeforeClear: boolean;
+  /** Automatically push new games to Firestore when signed in */
+  autoSyncEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: KBSettings = {
@@ -24,6 +26,7 @@ export const DEFAULT_SETTINGS: KBSettings = {
   defaultTab: 'overview',
   dataRetentionLimit: 0,
   confirmBeforeClear: true,
+  autoSyncEnabled: true,
 };
 
 const STORAGE_KEY = 'kb_settings';

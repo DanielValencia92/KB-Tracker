@@ -188,6 +188,55 @@
       #format-mode-btn.premier:hover { background: var(--muted); color: var(--bg); }
       #format-mode-btn.limited:hover { background: var(--limited-badge); color: #fff; }
       #format-mode-btn.eternal:hover { background: #1a7fa0; color: #fff; }
+
+      /* ── Auth section ── */
+      #auth-section {
+        padding: 6px 14px 8px;
+        border-top: 1px solid var(--border);
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      #auth-section .auth-info {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+        overflow: hidden;
+      }
+
+      #auth-section .auth-email {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--text);
+        font-size: 10px;
+      }
+
+      #auth-section .auth-sync-status {
+        font-size: 9px;
+        color: var(--muted);
+      }
+
+      #auth-section .auth-sync-status.syncing { color: var(--accent); }
+      #auth-section .auth-sync-status.error   { color: #e05252; }
+
+      #signin-popup-btn, #signout-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      #signin-popup-btn:hover { border-color: var(--accent); color: var(--accent); }
+      #signout-btn:hover      { border-color: #e05252; color: #e05252; }
     </style>
   </head>
   <body>
@@ -207,6 +256,15 @@
       </div>
       <button id="format-mode-btn" class="premier">&#9654; FORMAT MODE: PREMIER</button>
     </footer>
+    <div id="auth-section">
+      <!-- Populated by popup.ts based on auth state -->
+      <div class="auth-info">
+        <span id="auth-label" class="auth-email"></span>
+        <span id="auth-sync-status" class="auth-sync-status"></span>
+      </div>
+      <button id="signin-popup-btn" style="display:none">Sign in</button>
+      <button id="signout-btn"      style="display:none">Sign out</button>
+    </div>
     <script type="module" src="./popup.ts"></script>
   </body>
 </html>
