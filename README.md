@@ -17,6 +17,7 @@ A browser extension (Chrome & Firefox, Manifest V3) that automatically tracks, s
 - One-click toggle: **Tracking ON / OFF**
 - **Format Mode** selector — cycle between **PREMIER → LIMITED → ETERNAL** to set the format before each game. This must be set correctly before you start a game
 - **Export All Data** — downloads a full JSON backup of your entire local database
+- **Cloud sync status strip** — shows your signed-in Google account and current sync state (Chrome only)
 
 ### Dashboard
 
@@ -58,6 +59,12 @@ Open the full dashboard from the popup or click any game row.
 - **Data**
   - *Data retention limit* — keep only the N most recent games; "Trim Now" applies immediately (0 = unlimited)
   - *Confirm before deleting games* — toggle the confirmation dialog for destructive delete actions
+- **Account & Cloud Sync** *(Chrome only)*
+  - Sign in with Google to enable cloud backup via Firebase Firestore
+  - *Auto-sync new games* — automatically push each recorded game to the cloud as it is saved (default: on)
+  - **Push Local Games** — manually upload all locally stored games that are not yet in the cloud
+  - **Pull from Cloud** — download all cloud games and merge them into local IndexedDB (duplicate `gameId`s are skipped)
+  - Sign-out clears the local auth token; cloud data is retained
 
 #### Round Review Modal
 - Step through each round's arena snapshot: hand, ground arena, space arena, discard, resources
@@ -155,7 +162,11 @@ Still requires a manual reload on `chrome://extensions` after each Chrome rebuil
 
 ## Data & Privacy
 
-All data is stored **locally in your browser** using IndexedDB (`kb-tracker` database, schema v2). Nothing is sent to any external server.
+All data is stored **locally in your browser** using IndexedDB (`kb-tracker` database, schema v2).
+
+If you sign in with Google and enable cloud sync *(Chrome only)*, game records are also written to **Firebase Firestore** under your own Google account (`users/{uid}/...`). No data is shared with other users. Signing out stops future uploads; existing cloud data is not deleted automatically.
+
+Spectated games (games where you are not an active player) are never recorded.
 
 ### IndexedDB stores
 
@@ -192,7 +203,9 @@ This file contains everything needed to fully reconstruct your database on anoth
 | **Language** | TypeScript 5 |
 | **Bundler** | Vite 5 + [`vite-plugin-web-extension`](https://vite-plugin-web-extension.aklinker1.io) |
 | **API compatibility** | [`webextension-polyfill`](https://github.com/mozilla/webextension-polyfill) |
-| **Storage** | IndexedDB via [`idb`](https://github.com/jakearchibald/idb) |
+| **Local storage** | IndexedDB via [`idb`](https://github.com/jakearchibald/idb) |
+| **Cloud storage** | Firebase Firestore (REST API in service worker; Auth SDK in auth page) |
+| **Auth** | Google Sign-In via `chrome.identity.launchWebAuthFlow` + Firebase `signInWithCredential` |
 | **Styles** | Plain CSS (dark theme, CSS custom properties) |
 | **No runtime frameworks** | Vanilla TypeScript throughout |
 
@@ -204,9 +217,15 @@ This file contains everything needed to fully reconstruct your database on anoth
 src/
 ├── background/
 │   ├── db.ts               # IndexedDB schema and all read/write helpers
+│   ├── firestoreSync.ts    # Firestore REST API client (push/pull/token refresh)
 │   └── service-worker.ts   # MV3 background service worker; message router
+├── auth/
+│   ├── auth.html           # Standalone sign-in page (opened in a new tab)
+│   └── auth.ts             # Google OAuth via chrome.identity + Firebase signInWithCredential
 ├── content/
 │   └── content.ts          # Isolated-world content script; manages GameRecorder instances
+├── firebase/
+│   └── config.ts           # Firebase project config + OAuth client ID
 ├── inject/
 │   └── interceptor.js      # MAIN-world script; patches WebSocket before Socket.IO loads
 ├── shared/
