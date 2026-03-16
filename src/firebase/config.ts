@@ -15,13 +15,13 @@
  * Also add chrome.identity.getRedirectURL() as an authorized redirect URI
  * in Google Cloud Console → APIs & Services → Credentials → that OAuth client.
  */
-export const oauthClientId = '943581460966-6vmgf2jqd22phsa178hon8ue7rvnl44a.apps.googleusercontent.com';
+export const oauthClientId = import.meta.env.VITE_OAUTH_CLIENT_ID as string;
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyCVGI-76CIFnBBLvVz-zdZMa9fS-lHDe6c",
-  authDomain: "kb-tracker-2e703.firebaseapp.com",
-  projectId: "kb-tracker-2e703",
-  storageBucket: "kb-tracker-2e703.firebasestorage.app",
-  messagingSenderId: "943581460966",
-  appId: "1:943581460966:web:295f0ec6af6771bfef3e27"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID as string,
 };
